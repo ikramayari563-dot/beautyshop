@@ -1,0 +1,26 @@
+services:
+  mongodb:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo/init-collections.js:/docker-entrypoint-initdb.d/init-collections.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    ports: ["8081:8081"]
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/beautyshop
+      JWT_SECRET: change-me-please-use-a-long-random-secret-key-32+
+    depends_on:
+      mongodb: { condition: service_healthy }
+  frontend:
+    build: ./frontend
+    ports: ["4200:80"]
+    depends_on: [backend]
+volumes:
+  mongo-data:
